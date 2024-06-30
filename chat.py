@@ -14,6 +14,9 @@ from omnilmm.model.omnilmm import OmniLMMForCausalLM
 from omnilmm.model.utils import build_transform
 from omnilmm.train.train_utils import omni_preprocess
 from transformers import AutoTokenizer, AutoModel
+
+import fire
+
 DEFAULT_IMAGE_TOKEN = "<image>"
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
 DEFAULT_IM_START_TOKEN = "<im_start>"
@@ -190,12 +193,14 @@ class RLAIFVChat:
     def chat(self, input):
         return self.model.chat(input)
 
-
-if __name__ == '__main__':
-
-    chat_model = RLAIFVChat('RLAIF-V/RLAIF-V-7B')  # or 'HaoyeZhang/RLAIF-V-12B'
+def run(model_path="/mnt/storage/user/wangxiaodong/RLAIF-V/RLAIF-V-7B"):
+    chat_model = RLAIFVChat(model_path=model_path)
     image_path="./examples/test.jpeg"
     msgs = "Why did the car in the picture stop?"
     inputs = {"image": image_path, "question": msgs}
     answer = chat_model.chat(inputs)
     print(answer)
+    
+
+if __name__ == '__main__':
+    fire.Fire(run)
