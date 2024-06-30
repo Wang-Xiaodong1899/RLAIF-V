@@ -185,7 +185,7 @@ def concate_pad(tensorA, tensorB, padding_value):
     return out
 
 def preference_collator_fn(instances, pad_token_id):
-    rej_instances, win_instances = list(zip(*instances))
+    rej_instances, win_instances = list(zip(*instances)) # instances are (rej, win)
     rej_batch = SFT_collator_fn(rej_instances, pad_token_id)
     win_batch = SFT_collator_fn(win_instances, pad_token_id)
 

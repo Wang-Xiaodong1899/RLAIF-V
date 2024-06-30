@@ -15,7 +15,7 @@ from torch.utils.data import Dataset
 
 from utils.utils import is_main_process, get_rank
 from muffin.train.trainers import LLaVA15DPOTrainer
-from muffin.data.datasets import SingleDataSourceDataset, MultiDataSourceDataset,RLAIFVDataset
+from muffin.data.datasets import SingleDataSourceDataset, MultiDataSourceDataset,RLAIFVDataset, RLHFVDataset
 from muffin.data.data_processors import register_data_path
 from muffin.train.train_utils import encode_multimodal_preference_sample, preprocess_v1
 
@@ -130,6 +130,32 @@ class DPODataset(Dataset):
         super(DPODataset, self).__init__()
 
         self.tokenizer = tokenizer
+        # self.list_data_dict = RLAIFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
+        self.list_data_dict = RLHFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
+        self.multimodal_cfg = multimodal_cfg
+        self.multimodal_cfg['keep_image_tag'] = True
+
+    def __len__(self):
+        return len(self.list_data_dict)
+
+    def __getitem__(self, i):
+        source: dict = self.list_data_dict[i]
+        preprocess_func = partial(preprocess_v1, has_image=True)
+        # NOTE get rej and win data
+        rej_data_dict, win_data_dict = encode_multimodal_preference_sample(
+            source, self.tokenizer, self.multimodal_cfg, preprocess_func=preprocess_func)
+        return rej_data_dict, win_data_dict
+
+# Duplicate dataset
+class KTODataset(Dataset):
+    def __init__(self,
+                 tokenizer: transformers.PreTrainedTokenizer,
+                 data_dir: str,
+                 multimodal_cfg: dict,
+                 reference_model = None):
+        super(DPODataset, self).__init__()
+
+        self.tokenizer = tokenizer
         self.list_data_dict = RLAIFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
         self.multimodal_cfg = multimodal_cfg
         self.multimodal_cfg['keep_image_tag'] = True
@@ -140,6 +166,7 @@ class DPODataset(Dataset):
     def __getitem__(self, i):
         source: dict = self.list_data_dict[i]
         preprocess_func = partial(preprocess_v1, has_image=True)
+        # NOTE get rej and win data
         rej_data_dict, win_data_dict = encode_multimodal_preference_sample(
             source, self.tokenizer, self.multimodal_cfg, preprocess_func=preprocess_func)
         return rej_data_dict, win_data_dict
@@ -170,7 +197,59 @@ def make_dpo_data_module(tokenizer, data_args,reference_model):
     if data_args.eval_data_source_names is not None:
         eval_datasets = {}
         for name in data_args.eval_data_source_names:
+            # TODO ? why eval_dataset also DPO dataset
             eval_dataset = DPODataset(tokenizer=tokenizer,
+                                      data_dir=data_args.data_dir,
+                                      multimodal_cfg=dict(
+                                          is_multimodal=data_args.is_multimodal,
+                                          image_token_len=data_args.image_token_len,
+                                          image_folder=data_args.image_folder,
+                                          image_aspect_ratio=data_args.image_aspect_ratio,
+                                          use_im_start_end=getattr(
+                                              data_args, 'mm_use_im_start_end', False),
+                                          image_processor=getattr(
+                                              data_args, 'image_processor', None),
+                                          data_source_names=[name],
+                                          data_source_weights=[1],
+                                           shuffle_data=False
+                                          ),
+                                      reference_model=reference_model)
+            eval_datasets[name] = eval_dataset
+    else:
+        eval_datasets = None
+
+    return dict(train_dataset=train_dataset,
+                eval_dataset=eval_datasets,
+                data_collator=data_collator)
+
+# duplicate
+def make_kto_data_module(tokenizer, data_args,reference_model):
+    train_dataset = KTODataset(tokenizer=tokenizer,
+                               data_dir=data_args.data_dir,
+                               multimodal_cfg=dict(
+                                   is_multimodal=data_args.is_multimodal,
+                                   image_token_len=data_args.image_token_len,
+                                   image_folder=data_args.image_folder,
+                                   image_aspect_ratio=data_args.image_aspect_ratio,
+                                   use_im_start_end=getattr(
+                                       data_args, 'mm_use_im_start_end', False),
+                                   image_processor=getattr(
+                                       data_args, 'image_processor', None),
+                                   data_source_names=getattr(
+                                       data_args, 'data_source_names'),
+                                   data_source_weights=getattr(data_args, 'data_source_weights'),
+                                   shuffle_data=data_args.shuffle_data
+                                   ),
+                               reference_model=reference_model)
+    print(f'Train data size is {len(train_dataset)}', flush=True)
+    data_collator = DataCollatorForDPODataset(
+        tokenizer=tokenizer, beta=data_args.dpo_beta, mod_token_weight=data_args.dpo_token_weight)
+
+    if data_args.eval_data_source_names is not None:
+        eval_datasets = {}
+        for name in data_args.eval_data_source_names:
+            # TODO ? why eval_dataset also DPO dataset
+            eval_dataset = KTODataset(tokenizer=tokenizer,
                                       data_dir=data_args.data_dir,
                                       multimodal_cfg=dict(
                                           is_multimodal=data_args.is_multimodal,
