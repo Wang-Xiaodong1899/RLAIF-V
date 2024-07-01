@@ -1,40 +1,41 @@
 export PYTHONPATH=$PYTHONPATH:`realpath .`
 
-task_name=llava15_7b_DPO
-exp_name=llava15_rlaifv
+task_name=llava15_7b_DPO_rlhf
+exp_name=llava15_rlhfv_pbs8_V8_step_270
 
 deepspeed ./muffin/train/train_llava15.py \
-    --deepspeed ./script/zero2.json  \
-    --model_name_or_path llava-v1.5-7b \
-    --data_dir ./RLAIF-V-Dataset_logps/ \
+    --deepspeed ./script/llama-x.json  \
+    --model_name_or_path /mnt/storage/user/wangxiaodong/RLAIF-V/llava-v1.5-7b \
+    --data_dir /mnt/storage/user/wangxiaodong/RLAIF-V/RLHF-V-Dataset_logps \
     --image_folder not_used \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --fully_tune True \
     --image_aspect_ratio pad \
-    --bf16 True \
+    --bf16 False \
+    --fp16 True \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
     --output_dir .ckpt/$task_name-$exp_name/checkpoints \
-    --num_train_epochs 10 \
-    --per_device_train_batch_size 1 \
+    --max_steps 271 \
+    --num_train_epochs 3 \
+    --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 167 \
-    --save_total_limit 50 \
+    --save_steps 270 \
+    --save_total_limit 5 \
     --data_source_names '' \
     --data_source_weights 1 \
-    --max_steps 2672 \
     --learning_rate 5e-7 \
     --weight_decay 0.01 \
     --warmup_ratio 0.05 \
     --lr_scheduler_type "cosine" \
     --logging_steps 2 \
     --logging_dir .ckpt/$task_name-$exp_name/log \
-    --tf32 True \
+    --tf32 False \
     --model_max_length 2048 \
     --gradient_checkpointing True \
     --lazy_preprocess True \
