@@ -34,7 +34,10 @@ do
         answer_file=$save_dir/$answer_file_name
         echo "PWD at `pwd` checkpoint: "$ckpt_path" do MMHal-Bench output to: "$answer_file
 
+        echo $ckpt_path
+
         CUDA_VISIBLE_DEVICES=$C python ./muffin/eval/muffin_vqa.py \
+            --temperature 0 \
             --model-path $ckpt_path \
             --question-file $q_file \
             --answers-file $answer_file &
@@ -66,10 +69,10 @@ python ./eval/eval_gpt_mmhal.py \
     --api-key $3 >> ${answer_file}.eval_log.txt
 
 # Merge gpt4 evaluation to the original model outputs, can be ignore
-python ./eval/merge_mmhal_review_with_predict.py \
-    --review_path ${answer_file}.mmhal_test_eval.json \
-    --predict_path ${answer_file} \
-    --save_path ${answer_file}.mmhal_test_all_infos.json
+# python ./eval/merge_mmhal_review_with_predict.py \
+#     --review_path ${answer_file}.mmhal_test_eval.json \
+#     --predict_path ${answer_file} \
+#     --save_path ${answer_file}.mmhal_test_all_infos.json
 
 python ./eval/summarize_gpt_mmhal_review.py $save_dir > $save_dir/mmhal_scores.txt
 

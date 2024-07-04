@@ -23,6 +23,8 @@ from muffin.train.train_muffin import DataCollatorForDPODataset
 from functools import partial
 import muffin.conversation as conversation_lib
 
+from transformers import AutoTokenizer
+
 DEFAULT_PAD_TOKEN = "[PAD]"
 DEFAULT_EOS_TOKEN = "</s>"
 DEFAULT_BOS_TOKEN = "</s>"
@@ -130,8 +132,12 @@ class DPODataset(Dataset):
         super(DPODataset, self).__init__()
 
         self.tokenizer = tokenizer
-        # self.list_data_dict = RLAIFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
-        self.list_data_dict = RLHFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
+        if 'RLAIF' in data_dir:
+            self.list_data_dict = RLAIFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
+        elif 'RLHF' in data_dir: # default small dataset
+            self.list_data_dict = RLHFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
+        else:
+            self.list_data_dict = RLHFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
         self.multimodal_cfg = multimodal_cfg
         self.multimodal_cfg['keep_image_tag'] = True
 
@@ -279,7 +285,7 @@ def init_model(model_args, data_args, training_args, attn_implementation):
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         # attn_implementation=attn_implementation,
-        torch_dtype=(torch.bfloat16 if training_args.bf16 else None)
+        torch_dtype=(torch.bfloat16 if training_args.bf16 else torch.float16)
     )
     model.config.use_cache = False
     compute_dtype = (torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
@@ -295,7 +301,7 @@ def init_model(model_args, data_args, training_args, attn_implementation):
                 output.requires_grad_(True)
             model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
 
-    tokenizer = transformers.AutoTokenizer.from_pretrained(
+    tokenizer = AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         model_max_length=training_args.model_max_length,

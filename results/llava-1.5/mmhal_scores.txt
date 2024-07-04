@@ -1,0 +1,6 @@
+./results/llava-1.5
+===> ./results/llava-1.5/mmhal-bench_answer.jsonl.mmhal_test_eval.json
+Informativeness: 43.06
+Average score: 3.35
+Hallucination rate: 0.31
+Average score for each question type: 3.92,1.25,3.83,2.83,3.17,4.0,4.58,3.25

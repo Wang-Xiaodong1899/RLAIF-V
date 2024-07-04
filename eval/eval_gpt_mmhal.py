@@ -78,7 +78,7 @@ if __name__ == '__main__':
     parser.add_argument('--response', type=str, default='responses/idefics_80b.json', help='response file containing images, questions, and model responses')
     parser.add_argument('--evaluation', type=str, default=None, help='GPT-4 evaluation results to be saved')
     parser.add_argument('--api-key', type=str, required=True)
-    parser.add_argument('--gpt-model', type=str, default='gpt-4-0314')
+    parser.add_argument('--gpt-model', type=str, default='gpt-3.5-turbo')
     parser.add_argument('--temp_new', action='store_true')
     args = parser.parse_args()
 
@@ -89,6 +89,8 @@ if __name__ == '__main__':
         records = json.load(f)
 
     assert len(records) == 96
+    
+    print(f'record length: {len(records)}')
 
     chat = Chat(model=args.gpt_model, timeout_sec=100, openai_apikey=args.api_key)
 
@@ -108,19 +110,19 @@ if __name__ == '__main__':
                     ],
                     temperature=0.0,
                 )
-                try:
-                    if response['model'] != chat.model:
-                        real_model = response['model']
-                        print(f'Except f{chat.model}, but got message from f{real_model}', flush=True)
+                # try:
+                #     if response.model != chat.model:
+                #         real_model = response.model
+                #         print(f'Except f{chat.model}, but got message from f{real_model}', flush=True)
 
-                        response = None
-                        continue
+                #         response = None
+                #         continue
 
-                    print(response['model'])
-                    content = response["choices"][0]["message"]["content"]
-                    time.sleep(5)
-                except:
-                    print(f'Response: {response}')
+                #     print(response.model)
+                #     content = response.choices[0].message.content
+                #     time.sleep(5)
+                # except:
+                #     print(f'Response: {response}')
 
             except Exception as e:
                 print(e)
@@ -128,8 +130,9 @@ if __name__ == '__main__':
                 time.sleep(10)
                 continue
 
-        print(i, response['choices'][0]['message']['content'], flush=True)
-        responses.append(response)
+        print(i, response.choices[0].message.content, flush=True)
+        # responses.append(response)
+        responses.append(response.choices[0].message.content)
         time.sleep(1)
 
     # save responses
@@ -140,7 +143,7 @@ if __name__ == '__main__':
     # analyze responses
     scores = []
     for i, response in enumerate(responses):
-        response = response['choices'][0]['message']['content']
+        # response = response.choices[0].message.content
         scores_found = []
         for s in range(7):
             if f'rating: {s}' in response.lower():

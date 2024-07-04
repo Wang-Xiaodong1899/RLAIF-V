@@ -7,6 +7,7 @@ import shortuuid
 import base64
 import io
 import sys
+sys.path.append("/mnt/storage/user/wangxiaodong/RLAIF-V/")
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
@@ -33,7 +34,14 @@ def eval_model(args):
     disable_torch_init()
     model_path = os.path.expanduser(args.model_path)
     model_name = 'llava-v1.5-7b'
-    tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name, device_map={"": 'cuda'})
+    print(model_path)
+    print(args.model_base)
+    model_path = "/mnt/storage/user/wangxiaodong/RLAIF-V/RLAIF-V-7B"
+    model_name='llava-v1.5-7b'
+    tokenizer, model, image_processor, context_len = load_pretrained_model(
+        model_path, model_base=None, model_name=model_name, device_map={"": 'cuda'})
+
+    # tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name, device_map={"": 'cuda'})
 
     questions = [json.loads(q) for q in open(os.path.expanduser(args.question_file), "r")]
     questions = get_chunk(questions, args.num_chunks, args.chunk_idx)
@@ -96,11 +104,11 @@ def eval_model(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
+    parser.add_argument("--model-path", type=str, default="/mnt/storage/user/wangxiaodong/RLAIF-V/RLAIF-V-7B")
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--image-folder", type=str, default="")
-    parser.add_argument("--question-file", type=str, default="tables/question.jsonl")
-    parser.add_argument("--answers-file", type=str, default="answer.jsonl")
+    parser.add_argument("--question-file", type=str, default="/mnt/storage/user/wangxiaodong/RLAIF-V/eval/data/mmhal-bench_with_image.jsonl")
+    parser.add_argument("--answers-file", type=str, default="/mnt/storage/user/wangxiaodong/RLAIF-V/results/RLAIF-V-7B/mmhal-bench_answer.jsonl")
     parser.add_argument("--conv-mode", type=str, default="llava_v1")
     parser.add_argument("--num-chunks", type=int, default=1)
     parser.add_argument("--chunk-idx", type=int, default=0)

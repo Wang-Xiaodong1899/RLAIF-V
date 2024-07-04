@@ -192,6 +192,7 @@ If you already downloaded the dataset, you can replace 'openbmb/RLAIF-V-Dataset'
 Run the following command to start training.
 
 ```bash
+# Tips: use zero2 to generate logp data
 bash ./script/train/llava15_train.sh
 ```
 
@@ -237,6 +238,19 @@ Please download the MMHal evaluation data [here](https://drive.google.com/file/d
 # cd RLAIF-V
 
 bash ./script/eval_rlaifv_mmhal.sh ./RLAIF-V_weight ./results/RLAIF-V {YOUR_OPENAI_API_KEY}
+```
+
+if step by step evaluation
+```bash
+python muffin/eval/muffin_vqa.py --temperature 0
+python ./eval/change_mmhal_predict_template.py \
+    --response-template ./eval/data/mmhal-bench_answer_template.json \
+    --answers-file /mnt/storage/user/wangxiaodong/RLAIF-V/results/RLAIF-V-7B/mmhal-bench_answer.jsonl \
+    --save-file /mnt/storage/user/wangxiaodong/RLAIF-V/results/RLAIF-V-7B/mmhal-bench_answer.jsonl.template.json
+python ./eval/eval_gpt_mmhal.py \
+    --response /mnt/storage/user/wangxiaodong/RLAIF-V/results/RLAIF-V-7B/mmhal-bench_answer.jsonl.template.json \
+    --evaluation /mnt/storage/user/wangxiaodong/RLAIF-V/results/RLAIF-V-7B/mmhal-bench_answer.jsonl.mmhal_test_eval.json \
+    --api-key "" >> /mnt/storage/user/wangxiaodong/RLAIF-V/results/RLAIF-V-7B/mmhal-bench_answer.jsonl.eval_log.txt
 ```
 
 

@@ -40,8 +40,8 @@ def init_omni_lmm(model_path):
         )
     else:
         model = OmniLMMForCausalLM.from_pretrained(
-            model_name, tune_clip=True, torch_dtype=torch.bfloat16
-        ).to(device='cuda', dtype=torch.bfloat16)
+            model_name, tune_clip=True, torch_dtype=torch.float16
+        ).to(device='cuda', dtype=torch.float16)
 
     image_processor = build_transform(
         is_train=False, input_size=model.model.config.image_size, std_mode='OPENAI_CLIP')

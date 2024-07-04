@@ -1,7 +1,7 @@
 export PYTHONPATH=$PYTHONPATH:`realpath .`
 
 task_name=llava15_7b_DPO_rlhf
-exp_name=llava15_rlhfv_pbs8_V8_step_270
+exp_name=llava15_rlhfv_pbs8_V8_step_270_run2
 
 deepspeed ./muffin/train/train_llava15.py \
     --deepspeed ./script/llama-x.json  \

@@ -141,9 +141,16 @@ class PreferenceInferenceDataset(torch_data.Dataset):
             "origin_idx": sample['idx'],
             "image_id": sample['image_path'],
         }
-        question = {'from': 'human', 'value': f"<image>\n{sample['question']}"}
-        chosen = {'from': 'gpt', 'value': sample['chosen']}
-        rejected = {'from': 'gpt', 'value': sample['rejected']}
+        if sample['ds_name'] == 'RLHF-V-Dataset':
+            dict_data = json.loads(sample['text'])
+            
+            question = {'from': 'human', 'value': f"<image>\n{dict_data['question']}"}
+            chosen = {'from': 'gpt', 'value': dict_data['chosen']}
+            rejected = {'from': 'gpt', 'value': dict_data['rejected']}
+        else:
+            question = {'from': 'human', 'value': f"<image>\n{sample['question']}"}
+            chosen = {'from': 'gpt', 'value': sample['chosen']}
+            rejected = {'from': 'gpt', 'value': sample['rejected']}
 
         image = bytes_to_PIL_image(sample['image']['bytes'])
 
@@ -245,7 +252,7 @@ def get_multimodal_sample_logps(model, dataloader, tokenizer, is_llava15=False):
                         attention_mask=None,
                         past_key_values=None,
                         labels=labels,
-                        images=batch['images'].to(dtype=torch.bfloat16, device='cuda'),
+                        images=batch['images'].to(dtype=torch.float16, device='cuda'),
                     )
                     output = model.forward(
                         inputs_embeds=inputs_embeds,
@@ -256,7 +263,7 @@ def get_multimodal_sample_logps(model, dataloader, tokenizer, is_llava15=False):
                         input_ids=input_ids,
                         labels=labels,
                         attention_mask=attention_mask,
-                        images=batch['images'].to(dtype=torch.bfloat16, device='cuda'),
+                        images=batch['images'].to(dtype=torch.float16, device='cuda'),
                     )
                 per_token_logp, log_prob, average_log_prob = get_batch_logps(output.logits, labels, return_all=True)
 
@@ -289,6 +296,12 @@ def write_logp_to_preference_parquet(origin_data, cache_file, logps, overwrite_l
         logp_data['logps']=logps[index]
 
         new_line = copy.deepcopy(line)
+        # text_dict = json.loads(new_line['text'])
+        # new_line['question'] = text_dict['question']
+        # new_line['chosen'] = text_dict['chosen']
+        # new_line['rejected'] = text_dict['rejected']
+        # del text_dict
+        # new_line.pop('text')
 
         if 'logps' in new_line.keys():
             assert overwrite_logps, 'Found existing logp data, pass overwrite_logps=True to force overwritting'
@@ -312,10 +325,10 @@ def write_logp_to_preference_parquet(origin_data, cache_file, logps, overwrite_l
 
     torch.distributed.barrier()
 
-    return df
+    # return df
 
 def inference_logp(model, tokenizer, hf_data, cache_file, image_token_len, img_processor, use_im_start_end, is_llava15=False):
-    model = model.to(dtype=torch.bfloat16, device='cuda')
+    model = model.to(dtype=torch.float16, device='cuda')
     dataset = PreferenceInferenceDataset(tokenizer=tokenizer,
                                     data = hf_data,
                                     image_token_len=image_token_len,
@@ -324,7 +337,7 @@ def inference_logp(model, tokenizer, hf_data, cache_file, image_token_len, img_p
     collate_fn = partial(preference_collator_fn, pad_token_id=tokenizer.pad_token_id)
     dataloader = torch_data.DataLoader(dataset, batch_size=1, collate_fn=collate_fn,
                                        num_workers=5, shuffle=False, sampler=InferenceSampler(len(dataset)))
-
+    print(f'model type {next(model.parameters()).dtype}')
     outputs = get_multimodal_sample_logps(model, dataloader, tokenizer, is_llava15=is_llava15) # win_logp_list, win_avg_logp_list, win_per_token_logp_list, rej_logp_list, rej_avg_logp_list, rej_per_token_logp_list
 
     world_size = torch.distributed.get_world_size()
@@ -339,9 +352,10 @@ def inference_logp(model, tokenizer, hf_data, cache_file, image_token_len, img_p
 
     logps = list(zip(win_logp_list, win_avg_logp_list, win_per_token_logp_list, rej_logp_list, rej_avg_logp_list, rej_per_token_logp_list))
 
-    df = write_logp_to_preference_parquet(dataset.data, cache_file, logps, overwrite_logps=False)
+    # df = write_logp_to_preference_parquet(dataset.data, cache_file, logps, overwrite_logps=False)
+    write_logp_to_preference_parquet(dataset.data, cache_file, logps, overwrite_logps=False)
 
     torch.distributed.barrier()
 
     del model
-    return df
+    # return df
