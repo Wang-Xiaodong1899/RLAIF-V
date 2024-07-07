@@ -132,9 +132,9 @@ class DPODataset(Dataset):
         super(DPODataset, self).__init__()
 
         self.tokenizer = tokenizer
-        if 'RLAIF' in data_dir:
+        if 'RLAIF-V-Dataset' in data_dir:
             self.list_data_dict = RLAIFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
-        elif 'RLHF' in data_dir: # default small dataset
+        elif 'RLHF-V-Dataset' in data_dir: # default small dataset
             self.list_data_dict = RLHFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)
         else:
             self.list_data_dict = RLHFVDataset(data_dir, reference_model, tokenizer,multimodal_cfg['image_token_len'], multimodal_cfg['image_processor'], multimodal_cfg['use_im_start_end'], is_llava15=True)

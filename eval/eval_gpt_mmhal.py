@@ -77,7 +77,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--response', type=str, default='responses/idefics_80b.json', help='response file containing images, questions, and model responses')
     parser.add_argument('--evaluation', type=str, default=None, help='GPT-4 evaluation results to be saved')
-    parser.add_argument('--api-key', type=str, required=True)
+    parser.add_argument('--api-key', type=str, default="")
     parser.add_argument('--gpt-model', type=str, default='gpt-3.5-turbo')
     parser.add_argument('--temp_new', action='store_true')
     args = parser.parse_args()

@@ -89,6 +89,7 @@ cd RLAIF-V
 conda create -n rlaifv python=3.10 -y
 conda activate rlaifv
 pip install -e .
+pip install datasets==2.14.6
 ```
 3. Install required spaCy model
 ```bash
@@ -193,6 +194,7 @@ Run the following command to start training.
 
 ```bash
 # Tips: use zero2 to generate logp data
+# train dpo using zero-3+offload json
 bash ./script/train/llava15_train.sh
 ```
 

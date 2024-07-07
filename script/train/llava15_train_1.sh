@@ -1,10 +1,10 @@
 export PYTHONPATH=$PYTHONPATH:`realpath .`
 
 task_name=llava15_7b_DPO_rlhf
-exp_name=llava15_rlhfv_pbs8_V8_step_270_run2
+exp_name=llava15_rlhfv_pbs1_V8_step-2160_ZERO-3
 
 deepspeed ./muffin/train/train_llava15.py \
-    --deepspeed ./script/llama-x.json  \
+    --deepspeed ./script/zero3.json  \
     --model_name_or_path /mnt/storage/user/wangxiaodong/RLAIF-V/llava-v1.5-7b \
     --data_dir /mnt/storage/user/wangxiaodong/RLAIF-V/RLHF-V-Dataset_logps \
     --image_folder not_used \
@@ -18,14 +18,14 @@ deepspeed ./muffin/train/train_llava15.py \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
     --output_dir .ckpt/$task_name-$exp_name/checkpoints \
-    --max_steps 271 \
+    --max_steps 2160 \
     --num_train_epochs 3 \
-    --per_device_train_batch_size 8 \
-    --per_device_eval_batch_size 4 \
+    --per_device_train_batch_size 1 \
+    --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 270 \
+    --save_steps 2160 \
     --save_total_limit 5 \
     --data_source_names '' \
     --data_source_weights 1 \
@@ -33,7 +33,7 @@ deepspeed ./muffin/train/train_llava15.py \
     --weight_decay 0.01 \
     --warmup_ratio 0.05 \
     --lr_scheduler_type "cosine" \
-    --logging_steps 2 \
+    --logging_steps 5 \
     --logging_dir .ckpt/$task_name-$exp_name/log \
     --tf32 False \
     --model_max_length 2048 \
